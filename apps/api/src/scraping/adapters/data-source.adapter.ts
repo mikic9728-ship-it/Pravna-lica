@@ -1,0 +1,3 @@
+export interface SourcePolicy { officialApi?: string; termsUrl?: string; robotsTxtUrl?: string; legalNotes: string[]; rateLimitPerMinute: number; }
+export interface NormalizedCompany { name: string; jib: string; registrationNumber?: string; city?: string; address?: string; industry?: string; status?: 'ACTIVE' | 'INACTIVE' | 'BANKRUPTCY' | 'LIQUIDATION' | 'UNKNOWN'; website?: string; }
+export interface DataSourceAdapter { readonly name: string; checkPolicy(): Promise<SourcePolicy>; fetchCompanies(cursor?: string): Promise<{ items: NormalizedCompany[]; nextCursor?: string }>; fetchFinancials?(jib: string): Promise<Array<{ year: number; revenue: number; profit: number; sourceUrl?: string }>>; }
