@@ -1,0 +1,2 @@
+import { DataSourceAdapter, SourcePolicy } from './data-source.adapter';
+export class PublicRegistryAdapter implements DataSourceAdapter { readonly name = 'Registar poslovnih subjekata'; async checkPolicy(): Promise<SourcePolicy> { return { robotsTxtUrl: process.env.PUBLIC_REGISTRY_ROBOTS_URL, termsUrl: process.env.PUBLIC_REGISTRY_TERMS_URL, legalNotes: ['Adapter is disabled until official access terms and robots.txt are reviewed.'], rateLimitPerMinute: 10 }; } async fetchCompanies() { return { items: [] }; } }
