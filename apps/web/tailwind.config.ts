@@ -1,0 +1,2 @@
+import type { Config } from 'tailwindcss';
+export default { darkMode: ['class'], content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'], theme: { extend: { colors: { background: 'hsl(var(--background))', foreground: 'hsl(var(--foreground))', primary: '#f5c542', navy: '#07111f' }, boxShadow: { glow: '0 0 40px rgba(245,197,66,.25)' } } }, plugins: [require('tailwindcss-animate')] } satisfies Config;

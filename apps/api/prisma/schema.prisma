@@ -1,0 +1,176 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+
+enum CompanyStatus { ACTIVE INACTIVE BANKRUPTCY LIQUIDATION UNKNOWN }
+enum SubscriptionTier { FREE PRO ENTERPRISE }
+enum SyncStatus { QUEUED RUNNING SUCCEEDED FAILED PARTIAL }
+enum UserRole { USER ADMIN }
+
+model Company {
+  id String @id @default(cuid())
+  name String
+  slug String @unique
+  jib String @unique
+  registrationNumber String? @unique
+  logoUrl String?
+  foundedAt DateTime?
+  status CompanyStatus @default(UNKNOWN)
+  website String?
+  email String?
+  phone String?
+  employeeCount Int?
+  revenue Decimal? @db.Decimal(18,2)
+  profit Decimal? @db.Decimal(18,2)
+  averageSalary Decimal? @db.Decimal(18,2)
+  ebitda Decimal? @db.Decimal(18,2)
+  profitMargin Decimal? @db.Decimal(8,4)
+  debtRatio Decimal? @db.Decimal(8,4)
+  searchVector Unsupported("tsvector")?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  address Address?
+  industry Industry? @relation(fields: [industryId], references: [id])
+  industryId String?
+  financialReports FinancialReport[]
+  owners Owner[]
+  beneficialOwners BeneficialOwner[]
+  relatedCompanies RelatedCompany[] @relation("CompanyRelations")
+  relatedTo RelatedCompany[] @relation("RelatedToCompany")
+  employeeStats EmployeeStats[]
+  salaryStats SalaryStats[]
+  watchlistedBy User[] @relation("Watchlist")
+  @@index([name])
+  @@index([jib])
+  @@index([industryId])
+  @@index([status])
+}
+
+model FinancialReport {
+  id String @id @default(cuid())
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String
+  year Int
+  revenue Decimal @db.Decimal(18,2)
+  profit Decimal @db.Decimal(18,2)
+  assets Decimal? @db.Decimal(18,2)
+  liabilities Decimal? @db.Decimal(18,2)
+  equity Decimal? @db.Decimal(18,2)
+  ebitda Decimal? @db.Decimal(18,2)
+  source String
+  sourceUrl String?
+  reportedAt DateTime?
+  createdAt DateTime @default(now())
+  @@unique([companyId, year])
+  @@index([year])
+}
+
+model Owner {
+  id String @id @default(cuid())
+  company Company @relation(fields:[companyId],references:[id],onDelete:Cascade)
+  companyId String
+  name String
+  ownershipPercent Decimal? @db.Decimal(6,3)
+  country String?
+  validFrom DateTime?
+  validTo DateTime?
+}
+model BeneficialOwner {
+  id String @id @default(cuid())
+  company Company @relation(fields:[companyId],references:[id],onDelete:Cascade)
+  companyId String
+  name String
+  controlType String?
+  ownershipPercent Decimal? @db.Decimal(6,3)
+  riskFlag String?
+}
+model RelatedCompany {
+  id String @id @default(cuid())
+  company Company @relation("CompanyRelations",fields:[companyId],references:[id],onDelete:Cascade)
+  companyId String
+  related Company @relation("RelatedToCompany",fields:[relatedCompanyId],references:[id],onDelete:Cascade)
+  relatedCompanyId String
+  relationType String
+  @@unique([companyId, relatedCompanyId, relationType])
+}
+model EmployeeStats {
+  id String @id @default(cuid())
+  company Company @relation(fields:[companyId],references:[id],onDelete:Cascade)
+  companyId String
+  year Int
+  count Int
+  source String
+  @@unique([companyId, year])
+}
+model SalaryStats {
+  id String @id @default(cuid())
+  company Company @relation(fields:[companyId],references:[id],onDelete:Cascade)
+  companyId String
+  year Int
+  averageGross Decimal @db.Decimal(18,2)
+  averageNet Decimal? @db.Decimal(18,2)
+  source String
+  @@unique([companyId, year])
+}
+model Address {
+  id String @id @default(cuid())
+  company Company @relation(fields:[companyId],references:[id],onDelete:Cascade)
+  companyId String @unique
+  street String
+  city String
+  municipality String?
+  postalCode String?
+  latitude Decimal? @db.Decimal(10,7)
+  longitude Decimal? @db.Decimal(10,7)
+}
+model Industry {
+  id String @id @default(cuid())
+  naceCode String @unique
+  name String
+  sector String?
+  companies Company[]
+}
+model SyncJob {
+  id String @id @default(cuid())
+  source String
+  status SyncStatus @default(QUEUED)
+  startedAt DateTime?
+  finishedAt DateTime?
+  recordsProcessed Int @default(0)
+  recordsCreated Int @default(0)
+  recordsUpdated Int @default(0)
+  errorMessage String?
+  metadata Json?
+  createdAt DateTime @default(now())
+}
+model AuditLog {
+  id String @id @default(cuid())
+  actorId String?
+  action String
+  entity String
+  entityId String?
+  diff Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  name String?
+  passwordHash String?
+  googleId String?
+  role UserRole @default(USER)
+  apiKey String?
+  subscription Subscription?
+  watchlist Company[] @relation("Watchlist")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Subscription {
+  id String @id @default(cuid())
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  userId String @unique
+  tier SubscriptionTier @default(FREE)
+  active Boolean @default(true)
+  currentPeriodEnd DateTime?
+  createdAt DateTime @default(now())
+}
